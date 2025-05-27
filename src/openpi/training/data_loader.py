@@ -89,14 +89,14 @@ def create_dataset(data_config: _config.DataConfig, model_config: _model.BaseMod
     if repo_id == "fake":
         return FakeDataset(model_config, num_samples=1024)
 
-    dataset_meta = lerobot_dataset.LeRobotDatasetMetadata(repo_id, local_files_only=data_config.local_files_only)
+    dataset_meta = lerobot_dataset.LeRobotDatasetMetadata(repo_id, root = '/home/kasi/.cache/huggingface/lerobot/physical-intelligence/libero')
     dataset = lerobot_dataset.LeRobotDataset(
         data_config.repo_id,
         delta_timestamps={
             key: [t / dataset_meta.fps for t in range(model_config.action_horizon)]
             for key in data_config.action_sequence_keys
         },
-        local_files_only=data_config.local_files_only,
+        root = 'home/kasi/.cache/huggingface/lerobot/physical-intelligence/libero',
     )
 
     if data_config.prompt_from_task:
@@ -131,7 +131,7 @@ def create_data_loader(
     config: _config.TrainConfig,
     *,
     sharding: jax.sharding.Sharding | None = None,
-    skip_norm_stats: bool = False,
+    skip_norm_stats: bool = True,
     shuffle: bool = False,
     num_batches: int | None = None,
     num_workers: int = 0,

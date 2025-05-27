@@ -20,7 +20,7 @@ Running this conversion script will take approximately 30 minutes.
 
 import shutil
 
-from lerobot.common.datasets.lerobot_dataset import LEROBOT_HOME
+from lerobot.common.datasets.lerobot_dataset import HF_LEROBOT_HOME as LEROBOT_HOME
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
 import tensorflow_datasets as tfds
 import tyro
@@ -39,6 +39,7 @@ def main(data_dir: str, *, push_to_hub: bool = False):
     output_path = LEROBOT_HOME / REPO_NAME
     if output_path.exists():
         shutil.rmtree(output_path)
+    print(f"Creating dataset {output_path}...")
 
     # Create LeRobot dataset, define features to store
     # OpenPi assumes that proprio is stored in `state` and actions in `action`
@@ -85,12 +86,13 @@ def main(data_dir: str, *, push_to_hub: bool = False):
                         "wrist_image": step["observation"]["wrist_image"],
                         "state": step["observation"]["state"],
                         "actions": step["action"],
+                        "task": step["language_instruction"].decode(),
                     }
                 )
-            dataset.save_episode(task=step["language_instruction"].decode())
+            dataset.save_episode()
 
     # Consolidate the dataset, skip computing stats since we will do that later
-    dataset.consolidate(run_compute_stats=False)
+    #dataset.consolidate(run_compute_stats=False)
 
     # Optionally push to the Hugging Face Hub
     if push_to_hub:
