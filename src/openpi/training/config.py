@@ -20,6 +20,7 @@ import openpi.models.tokenizer as _tokenizer
 import openpi.policies.aloha_policy as aloha_policy
 import openpi.policies.droid_policy as droid_policy
 import openpi.policies.libero_policy as libero_policy
+import openpi.policies.u850_policy as u850_policy
 import openpi.shared.download as _download
 import openpi.shared.normalize as _normalize
 import openpi.training.optimizer as _optimizer
@@ -61,9 +62,9 @@ class AssetsConfig:
 @dataclasses.dataclass(frozen=True)
 class DataConfig:
     # LeRobot repo id. If None, fake data will be created.
-    repo_id: str | None = 'physical-intelligence/libero'
+    repo_id: str | None = 'level5_kasi/xarm-test'
     # Directory within the assets directory containing the data assets.
-    asset_id: str | None = '/home/kasi/.cache/huggingface/lerobot/physical-intelligence/libero'
+    asset_id: str | None = '/home/kasi/Desktop/l5vel/level5_kasi/xarm-test/'
     # Contains precomputed normalization stats. If None, normalization will not be performed.
     norm_stats: dict[str, _transforms.NormStats] | None = None
 
@@ -88,7 +89,7 @@ class DataConfig:
     prompt_from_task: bool = False
 
     # If true, will disable syncing the dataset from the Hugging Face Hub. Allows training on local-only datasets.
-    local_files_only: bool = False
+    local_files_only: bool = True
 
 
 class GroupFactory(Protocol):
@@ -322,6 +323,78 @@ class LeRobotLiberoDataConfig(DataConfigFactory):
             model_transforms=model_transforms,
         )
 
+@dataclasses.dataclass(frozen=True)
+class LeRobotu850DataConfig(DataConfigFactory):
+    """
+    This config is used to configure transforms that are applied at various parts of the data pipeline.
+    For your own dataset, you can copy this class and modify the transforms to match your dataset based on the
+    comments below.
+    """
+
+    @override
+    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
+        # The repack transform is *only* applied to the data coming from the dataset,
+        # and *not* during inference. We can use it to make inputs from the dataset look
+        # as close as possible to those coming from the inference environment (e.g. match the keys).
+        # Below, we match the keys in the dataset (which we defined in the data conversion script) to
+        # the keys we use in our inference pipeline (defined in the inference script for libero).
+        # For your own dataset, first figure out what keys your environment passes to the policy server
+        # and then modify the mappings below so your dataset's keys get matched to those target keys.
+        # The repack transform simply remaps key names here.
+        repack_transform = _transforms.Group(
+            inputs=[
+                _transforms.RepackTransform(
+                    {
+                        "observation/images/top": "image",
+                        "observation/images/wrist": "wrist_image",
+                        "observation/state": "state",
+                        "actions": "actions",
+                        "prompt": "prompt",
+                    }
+                )
+            ]
+        )
+
+        # The data transforms are applied to the data coming from the dataset *and* during inference.
+        # Below, we define the transforms for data going into the model (``inputs``) and the transforms
+        # for data coming out of the model (``outputs``) (the latter is only used during inference).
+        # We defined these transforms in `libero_policy.py`. You can check the detailed comments there for
+        # how to modify the transforms to match your dataset. Once you created your own transforms, you can
+        # replace the transforms below with your own.
+        data_transforms = _transforms.Group(
+            inputs=[u850_policy.u850Inputs(action_dim=model_config.action_dim, model_type=model_config.model_type)],
+            outputs=[u850_policy.u850Outputs()],
+        )
+
+        # One additional data transform: pi0 models are trained on delta actions (relative to the first
+        # state in each action chunk). IF your data has ``absolute`` actions (e.g. target joint angles)
+        # you can uncomment the following line to convert the actions to delta actions. The only exception
+        # is for the gripper actions which are always absolute.
+        # In the example below, we would apply the delta conversion to the first 6 actions (joints) and
+        # leave the 7th action (gripper) unchanged, i.e. absolute.
+        # In Libero, the raw actions in the dataset are already delta actions, so we *do not* need to
+        # apply a separate delta conversion (that's why it's commented out). Choose whether to apply this
+        # transform based on whether your dataset uses ``absolute`` or ``delta`` actions out of the box.
+
+        # TODO(karl): comment this out once we have updated the Libero checkpoints to not use
+        # the delta action transform
+        delta_action_mask = _transforms.make_bool_mask(6, -1)
+        data_transforms = data_transforms.push(
+            inputs=[_transforms.DeltaActions(delta_action_mask)],
+            outputs=[_transforms.AbsoluteActions(delta_action_mask)],
+        )
+
+        # Model transforms include things like tokenizing the prompt and action targets
+        # You do not need to change anything here for your own dataset.
+        model_transforms = ModelTransformFactory()(model_config)
+
+        # We return all data transforms for training and inference. No need to change anything here.
+        return dataclasses.replace(
+            self.create_base_config(assets_dirs),
+            repack_transforms=repack_transform,
+            data_transforms=data_transforms,
+            model_transforms=model_transforms,
+        )
 
 @dataclasses.dataclass(frozen=True)
 class TrainConfig:
@@ -552,6 +625,34 @@ _CONFIGS = [
         weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_fast_base/params"),
         num_train_steps=30_000,
     ),
+
+    ### My custon for u850
+    TrainConfig(
+        name="pi0_fast_u850",
+        # Here is an example of loading a pi0-FAST model for full finetuning.
+        # Modify action_dim and action_horizon to match your dataset (action horizon is equal to
+        # the desired action chunk length).
+        # The max_token_len is the maximum number of (non-image) tokens the model can handle.
+        # This includes the tokenized prompt, proprioceptive state, and (FAST-tokenized) action tokens.
+        # Choosing this value too small may chop off tokens at the end of your sequence (the code will throw
+        # a warning), while choosing it too large will waste memory (since we pad each batch element to the
+        # max_token_len). A good rule of thumb is to use approx 180 for single-arm robots, and approx 250 for
+        # two-arm robots. Generally, err on the lower side here first, and potentially increase the value if
+        # you see many warnings being thrown during training.
+        model=pi0_fast.Pi0FASTConfig(action_dim=8, action_horizon=9, max_token_len=180),
+        data=LeRobotu850DataConfig(
+            repo_id="level5_kasi/xarm-test-2",
+            base_config=DataConfig(
+                local_files_only=False,  # Set to True for local-only datasets.
+                prompt_from_task=True,
+            ),
+        ),
+        # Note that we load the pi0-FAST base model checkpoint here.
+        weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_fast_base/params"),
+        num_train_steps=30_000,
+    ),
+
+
     TrainConfig(
         name="pi0_fast_libero_low_mem_finetune",
         # Here is an example of loading a pi0-FAST model for LoRA finetuning.
