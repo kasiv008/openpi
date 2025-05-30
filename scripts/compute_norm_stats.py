@@ -56,7 +56,7 @@ def main(config_name: str, max_frames: int | None = None):
         num_batches=num_frames,
     )
 
-    keys = ["state", "actions"]
+    keys = ["state", "action"]
     stats = {key: normalize.RunningStats() for key in keys}
 
     for batch in tqdm.tqdm(data_loader, total=num_frames, desc="Computing stats"):

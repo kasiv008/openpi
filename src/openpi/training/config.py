@@ -62,9 +62,9 @@ class AssetsConfig:
 @dataclasses.dataclass(frozen=True)
 class DataConfig:
     # LeRobot repo id. If None, fake data will be created.
-    repo_id: str | None = 'level5_kasi/xarm-test'
+    repo_id: str | None = 'kasiv008/xarm-test-2'
     # Directory within the assets directory containing the data assets.
-    asset_id: str | None = '/home/kasi/Desktop/l5vel/level5_kasi/xarm-test/'
+    asset_id: str | None = None
     # Contains precomputed normalization stats. If None, normalization will not be performed.
     norm_stats: dict[str, _transforms.NormStats] | None = None
 
@@ -83,7 +83,7 @@ class DataConfig:
     # Names of keys that will be used by the data loader to generate the action sequence. The length of the
     # sequence is defined by the `action_horizon` field in the model config. This should be adjusted if your
     # LeRobot dataset is using different keys to represent the action.
-    action_sequence_keys: Sequence[str] = ("actions",)
+    action_sequence_keys: Sequence[str] = ("action",)
 
     # If true, will use the LeRobot dataset task to define the prompt.
     prompt_from_task: bool = False
@@ -345,10 +345,10 @@ class LeRobotu850DataConfig(DataConfigFactory):
             inputs=[
                 _transforms.RepackTransform(
                     {
-                        "observation/images/top": "image",
-                        "observation/images/wrist": "wrist_image",
-                        "observation/state": "state",
-                        "actions": "actions",
+                        "image": "observation.images.top",
+                        "wrist_image": "observation.images.wrist",
+                        "state": "observation.state",
+                        "action": "action",
                         "prompt": "prompt",
                     }
                 )
@@ -641,7 +641,7 @@ _CONFIGS = [
         # you see many warnings being thrown during training.
         model=pi0_fast.Pi0FASTConfig(action_dim=8, action_horizon=9, max_token_len=180),
         data=LeRobotu850DataConfig(
-            repo_id="level5_kasi/xarm-test-2",
+            repo_id="kasiv008/xarm-test-2",
             base_config=DataConfig(
                 local_files_only=False,  # Set to True for local-only datasets.
                 prompt_from_task=True,
@@ -650,6 +650,11 @@ _CONFIGS = [
         # Note that we load the pi0-FAST base model checkpoint here.
         weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_fast_base/params"),
         num_train_steps=30_000,
+        freeze_filter=pi0.Pi0Config(
+            paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+        ).get_freeze_filter(),
+        # Turn off EMA for LoRA finetuning.
+        ema_decay=None,
     ),
 
 

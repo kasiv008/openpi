@@ -89,14 +89,14 @@ def create_dataset(data_config: _config.DataConfig, model_config: _model.BaseMod
     if repo_id == "fake":
         return FakeDataset(model_config, num_samples=1024)
 
-    dataset_meta = lerobot_dataset.LeRobotDatasetMetadata(repo_id, root = '/home/kasi/.cache/huggingface/lerobot/physical-intelligence/libero')
+    dataset_meta = lerobot_dataset.LeRobotDatasetMetadata(repo_id, root = None)
     dataset = lerobot_dataset.LeRobotDataset(
         data_config.repo_id,
         delta_timestamps={
             key: [t / dataset_meta.fps for t in range(model_config.action_horizon)]
             for key in data_config.action_sequence_keys
         },
-        root = 'home/kasi/.cache/huggingface/lerobot/physical-intelligence/libero',
+        root = None,
     )
 
     if data_config.prompt_from_task:
@@ -175,8 +175,8 @@ def create_data_loader(
 
         def __iter__(self):
             for batch in self._data_loader:
-                yield _model.Observation.from_dict(batch), batch["actions"]
-
+                #yield _model.Observation.from_dict(batch), batch["actions"] 
+                yield _model.Observation.from_dict(batch), batch["action"] 
     return DataLoaderImpl(data_config, data_loader)
 
 
