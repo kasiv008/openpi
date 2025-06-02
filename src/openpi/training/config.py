@@ -62,7 +62,7 @@ class AssetsConfig:
 @dataclasses.dataclass(frozen=True)
 class DataConfig:
     # LeRobot repo id. If None, fake data will be created.
-    repo_id: str | None = 'kasiv008/xarm-test-2'
+    repo_id: str | None = 'kasiv008/xarm-robotiq-test'
     # Directory within the assets directory containing the data assets.
     asset_id: str | None = None
     # Contains precomputed normalization stats. If None, normalization will not be performed.
@@ -83,7 +83,8 @@ class DataConfig:
     # Names of keys that will be used by the data loader to generate the action sequence. The length of the
     # sequence is defined by the `action_horizon` field in the model config. This should be adjusted if your
     # LeRobot dataset is using different keys to represent the action.
-    action_sequence_keys: Sequence[str] = ("action",)
+
+    action_sequence_keys: Sequence[str] = ("action",) ## change for xarm
 
     # If true, will use the LeRobot dataset task to define the prompt.
     prompt_from_task: bool = False
@@ -639,9 +640,9 @@ _CONFIGS = [
         # max_token_len). A good rule of thumb is to use approx 180 for single-arm robots, and approx 250 for
         # two-arm robots. Generally, err on the lower side here first, and potentially increase the value if
         # you see many warnings being thrown during training.
-        model=pi0_fast.Pi0FASTConfig(action_dim=8, action_horizon=9, max_token_len=180),
+        model=pi0_fast.Pi0FASTConfig(action_dim=7, action_horizon=10, max_token_len=180),
         data=LeRobotu850DataConfig(
-            repo_id="kasiv008/xarm-test-2",
+            repo_id="kasiv008/xarm-robotiq-test",
             base_config=DataConfig(
                 local_files_only=False,  # Set to True for local-only datasets.
                 prompt_from_task=True,

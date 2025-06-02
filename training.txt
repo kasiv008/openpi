@@ -1,0 +1,2 @@
+python scripts/compute_norm_stats.py --config-name pi0_fast_u850
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.99 uv run scripts/train.py pi0_fast_u850 --exp-name=my_experiment --overwrite

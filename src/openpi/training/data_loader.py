@@ -175,8 +175,8 @@ def create_data_loader(
 
         def __iter__(self):
             for batch in self._data_loader:
-                #yield _model.Observation.from_dict(batch), batch["actions"] 
-                yield _model.Observation.from_dict(batch), batch["action"] 
+                yield _model.Observation.from_dict(batch), batch["actions"] 
+                #yield _model.Observation.from_dict(batch), batch["action"] 
     return DataLoaderImpl(data_config, data_loader)
 
 

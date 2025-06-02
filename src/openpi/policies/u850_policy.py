@@ -89,13 +89,14 @@ class u850Inputs(transforms.DataTransformFn):
             # We are padding to the model action dim.
             # For pi0-FAST, this is a no-op (since action_dim = 7).
             actions = transforms.pad_to_dim(data["action"], self.action_dim)
-            inputs["action"] = actions
+            inputs["actions"] = actions
 
         # Pass the prompt (aka language instruction) to the model.
         # Keep this for your own dataset (but modify the key if the instruction is not
         # stored in "prompt"; the output dict always needs to have the key "prompt").
         if "prompt" in data:
             inputs["prompt"] = data["prompt"]
+        #print(inputs)
 
         return inputs
 
