@@ -27,6 +27,7 @@ def resize_with_pad(
     resized_images = jax.image.resize(
         images, (images.shape[0], resized_height, resized_width, images.shape[3]), method=method
     )
+
     if images.dtype == jnp.uint8:
         # round from float back to uint8
         resized_images = jnp.round(resized_images).clip(0, 255).astype(jnp.uint8)

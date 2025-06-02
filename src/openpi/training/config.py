@@ -87,7 +87,7 @@ class DataConfig:
     action_sequence_keys: Sequence[str] = ("action",) ## change for xarm
 
     # If true, will use the LeRobot dataset task to define the prompt.
-    prompt_from_task: bool = False
+    prompt_from_task: bool = True
 
     # If true, will disable syncing the dataset from the Hugging Face Hub. Allows training on local-only datasets.
     local_files_only: bool = True
@@ -111,7 +111,7 @@ class ModelTransformFactory(GroupFactory):
                 return _transforms.Group(
                     inputs=[
                         _transforms.InjectDefaultPrompt(self.default_prompt),
-                        _transforms.ResizeImages(224, 224),
+                        _transforms.ResizeImages(480,640), # originally 224,224
                         _transforms.TokenizePrompt(
                             _tokenizer.PaligemmaTokenizer(model_config.max_token_len),
                         ),
@@ -121,7 +121,7 @@ class ModelTransformFactory(GroupFactory):
                 return _transforms.Group(
                     inputs=[
                         _transforms.InjectDefaultPrompt(self.default_prompt),
-                        _transforms.ResizeImages(224, 224),
+                        _transforms.ResizeImages(480,640), # originally 224,224
                         _transforms.TokenizeFASTInputs(
                             _tokenizer.FASTTokenizer(model_config.max_token_len),
                         ),

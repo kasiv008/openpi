@@ -39,7 +39,7 @@ IMAGE_KEYS = (
 
 
 # This may need change if we release a small model.
-IMAGE_RESOLUTION = (224, 224)
+IMAGE_RESOLUTION = (224,224)  # (height, width)
 
 
 # Data format
@@ -157,7 +157,6 @@ def preprocess_observation(
         if image.shape[1:3] != image_resolution:
             logger.info(f"Resizing image {key} from {image.shape[1:3]} to {image_resolution}")
             image = image_tools.resize_with_pad(image, *image_resolution)
-
         if train:
             # Convert from [-1, 1] to [0, 1] for augmax.
             image = image / 2.0 + 0.5

@@ -101,6 +101,7 @@ def create_dataset(data_config: _config.DataConfig, model_config: _model.BaseMod
 
     if data_config.prompt_from_task:
         dataset = TransformedDataset(dataset, [_transforms.PromptFromLeRobotTask(dataset_meta.tasks)])
+    
 
     return dataset
 

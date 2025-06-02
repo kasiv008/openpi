@@ -151,7 +151,6 @@ def train_step(
 
     train_rng = jax.random.fold_in(rng, state.step)
     observation, actions = batch
-
     # Filter out frozen params.
     diff_state = nnx.DiffState(0, config.trainable_filter)
     loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(model, train_rng, observation, actions)
@@ -249,6 +248,7 @@ def main(config: _config.TrainConfig):
     )
 
     infos = []
+
     for step in pbar:
         with sharding.set_mesh(mesh):
             train_state, info = ptrain_step(train_rng, train_state, batch)
