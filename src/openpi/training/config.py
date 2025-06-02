@@ -62,7 +62,7 @@ class AssetsConfig:
 @dataclasses.dataclass(frozen=True)
 class DataConfig:
     # LeRobot repo id. If None, fake data will be created.
-    repo_id: str | None = 'kasiv008/xarm-robotiq-test'
+    repo_id: str | None = 'kasiv008/xarm-robotiq-toy_pick'
     # Directory within the assets directory containing the data assets.
     asset_id: str | None = None
     # Contains precomputed normalization stats. If None, normalization will not be performed.
@@ -642,7 +642,7 @@ _CONFIGS = [
         # you see many warnings being thrown during training.
         model=pi0_fast.Pi0FASTConfig(action_dim=7, action_horizon=10, max_token_len=180),
         data=LeRobotu850DataConfig(
-            repo_id="kasiv008/xarm-robotiq-test",
+            repo_id="kasiv008/xarm-robotiq-toy_pick",
             base_config=DataConfig(
                 local_files_only=False,  # Set to True for local-only datasets.
                 prompt_from_task=True,
