@@ -10,10 +10,10 @@ from openpi.models import model as _model
 def make_u850_example() -> dict:
     """Creates a random input example for the Libero policy."""
     return {
-        "state": np.random.rand(8),
+        "state": np.random.rand(7),
         "image": np.random.randint(256, size=(480,640, 3), dtype=np.uint8),
         "wrist_image": np.random.randint(256, size=(480,640, 3), dtype=np.uint8),
-        "prompt": "do something",
+        "prompt": "pick the toy from ground and place it on the table",
     }
 
 
@@ -115,4 +115,5 @@ class u850Outputs(transforms.DataTransformFn):
         # dimension, we need to now parse out the correct number of actions in the return dict.
         # For Libero, we only return the first 7 actions (since the rest is padding).
         # For your own dataset, replace `7` with the action dimension of your dataset.
-        return {"action": np.asarray(data["action"][:, :7])}
+        #print(data)
+        return {"action": np.asarray(data["actions"][:, :7])}
